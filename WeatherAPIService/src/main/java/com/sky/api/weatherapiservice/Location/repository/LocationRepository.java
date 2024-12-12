@@ -1,0 +1,24 @@
+package com.sky.api.weatherapiservice.Location.repository;
+
+import com.sky.api.weatherapicommon.entity.Location;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+
+public interface LocationRepository extends JpaRepository<Location, String> {
+    // Custom query methods (if any)
+
+    @Query("select l from Location l where l.trashed=false")
+     List<Location> findUntrashed();
+
+    @Query("select l from Location l where l.trashed = false and l.code = :code")
+    Location findByCode(@Param("code") String code);
+
+    @Query("update Location set trashed=true where code=:code")
+    @Modifying
+    void trashByCode(@Param("code") String code);
+
+}
