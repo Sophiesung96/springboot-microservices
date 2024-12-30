@@ -21,4 +21,7 @@ public interface LocationRepository extends JpaRepository<Location, String> {
     @Modifying
     void trashByCode(@Param("code") String code);
 
+    @Query("select l from Location  l where l.countryCode=:countrycode and l.cityName=:cityname and l.trashed=false")
+    Location findByCountryCodeCityName(@Param(value = "countrycode") String countryCode, @Param(value = "cityname")String cityName);
+
 }

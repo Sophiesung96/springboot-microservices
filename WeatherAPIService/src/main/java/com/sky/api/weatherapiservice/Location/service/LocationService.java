@@ -15,4 +15,7 @@ public interface LocationService {
     Location update(Location location);
 
     void deleteLocation(String code);
+    Location findByCountryCodeCityName(String countryCode, String cityName);
+    Location findByLocationCode(String locationCode);
+
 }

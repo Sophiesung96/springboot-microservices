@@ -30,7 +30,7 @@ public class LocationController {
     public ResponseEntity<Location>addLocation(@Valid @RequestBody Location location) {
 
         Location theLocation=locationService.add(location);
-        URI uri=URI.create("v1/locations"+theLocation.getCode());
+        URI uri=URI.create("v1/locations/"+theLocation.getCode());
         return ResponseEntity.created(uri).body(theLocation);
     }
 
@@ -46,41 +46,24 @@ public class LocationController {
 
     @GetMapping("/{code}")
     public ResponseEntity<?> getLocation(@PathVariable  String code) {
+
         Location location=locationService.get(code);
-        if(location==null)
-        {
-            return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build();
-        }
         return ResponseEntity.ok().body(location);
     }
 
 
     @PutMapping
     public ResponseEntity<?> updateLocation(@RequestBody Location location) {
-        try
-        {
+
             Location updatedLocation=locationService.update(location);
             return ResponseEntity.ok().body(updatedLocation);
-        }
-        catch(LocationNotFoundException e)
-        {
-           return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
     }
 
     @DeleteMapping("/{code}")
     public ResponseEntity<?> deleteLocation(@PathVariable String code)
     {
-        try
-        {
             locationService.deleteLocation(code);
             return ResponseEntity.noContent().build();
-        }
-        catch(LocationNotFoundException e)
-        {
-            return ResponseEntity.noContent().build();
-        }
     }
-
 
 }

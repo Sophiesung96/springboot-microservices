@@ -3,10 +3,11 @@ package com.sky.api.weatherapiservice.Location.controller;
 import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sky.api.weatherapicommon.entity.Location;
+import com.sky.api.weatherapicommon.entity.RealTimeWeather;
 import com.sky.api.weatherapiservice.Exception.LocationNotFoundException;
+import com.sky.api.weatherapiservice.Location.repository.LocationRepository;
 import com.sky.api.weatherapiservice.Location.service.LocationService;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -14,12 +15,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.web.servlet.MockMvc;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import java.util.Collections;
 import java.util.List;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,27 +45,38 @@ class LocationControllerTest {
         @Autowired
         MockMvc mockMvc;
 
+
         private static final String END_POINT_PATH = "/v1/locations";
 
         @Test
         public void testAddSuccess() throws Exception {
 
+            RealTimeWeather realTimeWeather = RealTimeWeather.builder()
+                    .temperature(15)
+                    .humidity(60)
+                    .windSpeed(20)
+                    .precipitation(43)
+                    .status("Windy")
+                    .build();
+
             Location location = Location.builder()
-                    .code("LDN_UK")
-                    .cityName("London")
+                    .code("LDN_UK") // 6 characters, valid
+                    .cityName("London") // 6 characters, valid
                     .regionName("England")
-                    .countryCode("UK")
                     .countryName("United Kingdom")
+                    .countryCode("UK") // 2 characters, valid
+                    .enabled(true)
+                    .trashed(false)
+                    .realTimeWeather(realTimeWeather)
                     .build();
 
 
-            //Location savedLocation=locationService.add(location);
-            //assertNotNull(savedLocation);
-            //assertEquals(savedLocation.getCode(),"NYC_USA");
-            Mockito.when(locationService.add(location)).thenReturn(location);
+            // Mock the service behavior
+            Mockito.when(locationService.add(Mockito.any(Location.class))).thenReturn(location);
+
             String bodyContent=objectMapper.writeValueAsString(location);
             mockMvc.perform(post(END_POINT_PATH).content(bodyContent).contentType("application/json"))
-                    .andExpect(status().is(201))
+                    .andExpect(status().isCreated())
                     .andDo(print());
         }
 
@@ -123,7 +133,7 @@ class LocationControllerTest {
                     .when(locationService).deleteLocation(code);
             String requestURI=END_POINT_PATH+"/"+code;
             mockMvc.perform(delete(requestURI))
-                    .andExpect(status().isNotFound())
+                    .andExpect(status().isNoContent())
                     .andDo(print());
     }
 

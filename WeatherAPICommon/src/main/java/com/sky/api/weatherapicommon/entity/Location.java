@@ -1,22 +1,29 @@
 package com.sky.api.weatherapicommon.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.validator.constraints.Length;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
 
 @Entity
 @Table(name = "location")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Getter
+@Setter
 public class Location {
+
+
+    public Location(String cityName, String regionName, String countryName, String countryCode) {
+        this.cityName = cityName;
+        this.regionName = regionName;
+        this.countryName = countryName;
+        this.countryCode = countryCode;
+    }
 
     @Id
     @Column(length = 12, name = "code", nullable = false, unique = true)
@@ -48,6 +55,18 @@ public class Location {
     private boolean trashed;
 
     @OneToOne(mappedBy = "location",cascade = CascadeType.ALL)
+    @JsonManagedReference  //marks the owning side (parent).
     private RealTimeWeather realTimeWeather;
 
+    @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HourlyWeather> listHourlyWeather;
+
+    @Override
+    public String toString() {
+        return
+                ", cityName='" + cityName + '\'' +
+                ", regionName='" + regionName + '\'' +
+                ", countryName='" + countryName;
+
+    }
 }

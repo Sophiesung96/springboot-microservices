@@ -8,9 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
-@Transactional
 public class LocationServiceImpl implements LocationService {
 
     private LocationRepository locationRepository;
@@ -23,7 +23,12 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     public Location add(Location location) {
-        return locationRepository.save(location);
+        Location newLocation=locationRepository.save(location);
+        if(newLocation==null)
+        {
+            throw new LocationNotFoundException();
+        }
+        return newLocation;
     }
 
     @Override
@@ -43,7 +48,7 @@ public class LocationServiceImpl implements LocationService {
         Location locationDb=get(code);
         if(locationDb==null)
         {
-            throw new LocationNotFoundException("No location found with the given code");
+            throw new LocationNotFoundException(code);
         }
         locationDb.setCityName(locationRequest.getCityName());
         locationDb.setRegionName(locationRequest.getRegionName());
@@ -59,10 +64,26 @@ public class LocationServiceImpl implements LocationService {
         Location locationDb=get(code);
         if(locationDb==null)
         {
-            throw new LocationNotFoundException("No Location was found with this code: "+code);
+            throw new LocationNotFoundException(code);
         }
         //labeling this code as being trashed without directly deleting it from the database
         locationRepository.trashByCode(code);
+    }
+
+    @Override
+    public Location findByCountryCodeCityName(String countryCode, String cityName) {
+
+        Location location= locationRepository.findByCountryCodeCityName(countryCode, cityName);
+        if(location==null)
+        {
+            throw new LocationNotFoundException(countryCode,cityName);
+        }
+        return location;
+    }
+
+    @Override
+    public Location findByLocationCode(String locationCode) {
+        return locationRepository.findByCode(locationCode);
     }
 
 
