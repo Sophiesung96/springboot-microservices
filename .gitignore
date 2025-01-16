@@ -1,1 +1,13 @@
-section4/cards/mvnw
+/mvnw
+/mvnw.cmd
+/cards/mvnw
+/cards/mvnw.cmd
+/accounts/mvnw
+/accounts/mvnw.cmd
+/accounts/.mvn/
+/.mvn/
+/.idea/
+/loans/.mvn/
+/loans/META-INF/
+/loans/mvnw
+/loans/mvnw.cmd
