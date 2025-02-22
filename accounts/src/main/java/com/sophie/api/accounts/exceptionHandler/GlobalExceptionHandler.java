@@ -3,6 +3,7 @@ package com.sophie.api.accounts.exceptionHandler;
 import com.sophie.api.accounts.dto.ErrorResponseDto;
 import com.sophie.api.accounts.exception.CustomerAlreadyExistsException;
 import com.sophie.api.accounts.exception.ResourceNotFoundException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -29,7 +30,7 @@ public class GlobalExceptionHandler  extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         Map<String, String> validationErrors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
+        ex.getBindingResult().getFieldErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String validationMsg = error.getDefaultMessage();
             validationErrors.put(fieldName, validationMsg);
@@ -41,6 +42,16 @@ public class GlobalExceptionHandler  extends ResponseEntityExceptionHandler {
         responseBody.put("message", "Validation failed");
         responseBody.put("errors", validationErrors);
         return new ResponseEntity<>(responseBody, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle validation errors from @Validated (method-level constraints)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, String>> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getConstraintViolations().forEach(violation ->
+                errors.put(violation.getPropertyPath().toString(), violation.getMessage())
+        );
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
 

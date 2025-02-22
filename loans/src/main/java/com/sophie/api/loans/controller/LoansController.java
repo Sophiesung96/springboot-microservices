@@ -3,6 +3,7 @@ package com.sophie.api.loans.controller;
 
 import com.sophie.api.loans.constants.LoansConstants;
 import com.sophie.api.loans.dto.ErrorResponseDto;
+import com.sophie.api.loans.dto.LoansContactInfoDto;
 import com.sophie.api.loans.dto.LoansDto;
 import com.sophie.api.loans.dto.ResponseDto;
 import com.sophie.api.loans.service.LoansService;
@@ -26,12 +27,13 @@ import org.springframework.web.bind.annotation.*;
         description = "CRUD REST APIs in EazyBank to CREATE, UPDATE, FETCH AND DELETE loan details"
 )
 @RestController
-@RequestMapping(path = "/api", produces = {MediaType.APPLICATION_JSON_VALUE})
+@RequestMapping(path = "/api/v1", produces = {MediaType.APPLICATION_JSON_VALUE})
 @AllArgsConstructor
 @Validated
 public class LoansController {
 
     private LoansService loansService;
+    private LoansContactInfoDto loansContactInfoDto;
 
     @Operation(
             summary = "Create Loan REST API",
@@ -159,6 +161,13 @@ public class LoansController {
                     .status(HttpStatus.EXPECTATION_FAILED)
                     .body(new ResponseDto(LoansConstants.STATUS_417, LoansConstants.MESSAGE_417_DELETE));
         }
+    }
+
+    @GetMapping("/contact-info")
+    public ResponseEntity<LoansContactInfoDto> getContactInfo() {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(loansContactInfoDto);
     }
 
 }

@@ -27,42 +27,50 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 
+@Tag(
+        name = "CRUD REST APIs for Accounts in EazyBank",
+        description = "CRUD REST APIs in EazyBank to CREATE, UPDATE, FETCH AND DELETE account details"
+)
 @RestController
 @RequestMapping(path="/api/v1", produces = {MediaType.APPLICATION_JSON_VALUE})
-@Validated //to activate the method-level validation
-@Tag(name = "CRUD REST APIs for Accounts"
-,description = "CRUD REST APIs to CREATE, READ,UPDATE, DELETE account details")
+@Validated
 public class AccountsController {
 
     private final AccountService accountService;
 
-    @Autowired
-    private AccountsContactInfoDto accountsContactInfoDto;
-    private Environment environment;
-
-
-    @Autowired
-    public AccountsController(AccountService accountService,Environment environment) {
+    public AccountsController(AccountService accountService) {
         this.accountService = accountService;
-        this.environment = environment;
     }
 
-    @PostMapping("/create")
-    @Operation(summary = "create Account REST API",description = "REST API to create new Customer" +
-            "and Account")
-    @ApiResponses(
-            {
+    @Value("${build.version:UNKNOWN}")
+    private String buildVersion;
+
+
+    @Autowired
+    private Environment environment;
+
+    @Autowired
+    private AccountsContactInfoDto accountsContactInfoDto;
+
+    @Operation(
+            summary = "Create Account REST API",
+            description = "REST API to create new Customer &  Account inside EazyBank"
+    )
+    @ApiResponses({
             @ApiResponse(
                     responseCode = "201",
-                    description =  "HTTP Status CREATED"),
+                    description = "HTTP Status CREATED"
+            ),
             @ApiResponse(
-                    responseCode = "400",
-                    description =  "HTTP Status Internal Server Error",
+                    responseCode = "500",
+                    description = "HTTP Status Internal Server Error",
                     content = @Content(
                             schema = @Schema(implementation = ErrorResponseDto.class)
                     )
             )
-    })
+    }
+    )
+    @PostMapping("/create")
     public ResponseEntity<ResponseDto> createAccount(@Valid @RequestBody CustomerDto customerDto) {
         accountService.createAccount(customerDto);
         return ResponseEntity
@@ -70,8 +78,6 @@ public class AccountsController {
                 .body(new ResponseDto(AccountsConstants.STATUS_201, AccountsConstants.MESSAGE_201));
     }
 
-
-    @GetMapping("/fetch/{mobileNumber}")
     @Operation(
             summary = "Fetch Account Details REST API",
             description = "REST API to fetch Customer &  Account details based on a mobile number"
@@ -82,22 +88,22 @@ public class AccountsController {
                     description = "HTTP Status OK"
             ),
             @ApiResponse(
-                    responseCode = "404",
-                    description = "HTTP Status Not Found",
-                    content = @Content(schema = @Schema(
-                            implementation = ErrorResponseDto.class
-                    ))
+                    responseCode = "500",
+                    description = "HTTP Status Internal Server Error",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
             )
-    })
-    public ResponseEntity<CustomerDto> fetchAccountDetails(@PathVariable @Pattern(regexp = "^[0-9]{10}$"
-            , message ="Mobile number must be exactly 10 digits." )
-                                                               String mobileNumber) {
+    }
+    )
+    @GetMapping("/fetch")
+    public ResponseEntity<CustomerDto> fetchAccountDetails(@RequestParam
+                                                           @Pattern(regexp="(^$|[0-9]{10})",message = "Mobile number must be 10 digits")
+                                                           String mobileNumber) {
         CustomerDto customerDto = accountService.fetchAccount(mobileNumber);
         return ResponseEntity.status(HttpStatus.OK).body(customerDto);
     }
 
-
-    @PutMapping("/update")
     @Operation(
             summary = "Update Account Details REST API",
             description = "REST API to update Customer &  Account details based on a account number"
@@ -109,10 +115,7 @@ public class AccountsController {
             ),
             @ApiResponse(
                     responseCode = "417",
-                    description = "HTTP Status EXPECTATION_FAILED",
-                    content=@Content(schema = @Schema(
-                            implementation = ErrorResponseDto.class
-                    ))
+                    description = "Expectation Failed"
             ),
             @ApiResponse(
                     responseCode = "500",
@@ -121,7 +124,9 @@ public class AccountsController {
                             schema = @Schema(implementation = ErrorResponseDto.class)
                     )
             )
-    })
+    }
+    )
+    @PutMapping("/update")
     public ResponseEntity<ResponseDto> updateAccountDetails(@Valid @RequestBody CustomerDto customerDto) {
         boolean isUpdated = accountService.updateAccount(customerDto);
         if(isUpdated) {
@@ -135,8 +140,6 @@ public class AccountsController {
         }
     }
 
-
-    @DeleteMapping("/delete/{mobileNumber}")
     @Operation(
             summary = "Delete Account & Customer Details REST API",
             description = "REST API to delete Customer &  Account details based on a mobile number"
@@ -144,11 +147,11 @@ public class AccountsController {
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "Http Status OK"
+                    description = "HTTP Status OK"
             ),
             @ApiResponse(
                     responseCode = "417",
-                    description = "Http Status Expectation failed"
+                    description = "Expectation Failed"
             ),
             @ApiResponse(
                     responseCode = "500",
@@ -157,9 +160,12 @@ public class AccountsController {
                             schema = @Schema(implementation = ErrorResponseDto.class)
                     )
             )
-    })
-    public ResponseEntity<ResponseDto> deleteAccountDetails(@PathVariable @Pattern(regexp = "^[0-9]{10}$",
-            message = "Mobile number must be exactly 10 digits.")  String mobileNumber) {
+    }
+    )
+    @DeleteMapping("/delete")
+    public ResponseEntity<ResponseDto> deleteAccountDetails(@RequestParam
+                                                            @Pattern(regexp="(^$|[0-9]{10})",message = "Mobile number must be 10 digits")
+                                                            String mobileNumber) {
         boolean isDeleted = accountService.deleteAccount(mobileNumber);
         if(isDeleted) {
             return ResponseEntity
@@ -172,11 +178,85 @@ public class AccountsController {
         }
     }
 
+    @Operation(
+            summary = "Get Build information",
+            description = "Get Build information that is deployed into accounts microservice"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "HTTP Status OK"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "HTTP Status Internal Server Error",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
+    }
+    )
+    @GetMapping("/build-info")
+    public ResponseEntity<String> getBuildInfo() {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(buildVersion);
+    }
+
+    @Operation(
+            summary = "Get Java version",
+            description = "Get Java versions details that is installed into accounts microservice"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "HTTP Status OK"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "HTTP Status Internal Server Error",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
+    }
+    )
+    @GetMapping("/java-version")
+    public ResponseEntity<String> getJavaVersion() {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(environment.getProperty("JAVA_HOME"));
+    }
+
+    @Operation(
+            summary = "Get Contact Info",
+            description = "Contact Info details that can be reached out in case of any issues"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "HTTP Status OK"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "HTTP Status Internal Server Error",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
+    }
+    )
     @GetMapping("/contact-info")
     public ResponseEntity<AccountsContactInfoDto> getContactInfo() {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(accountsContactInfoDto);
+    }
+
+
+    @GetMapping("/version")
+    public String getVersion() {
+        return "Config Property: " + environment.getProperty("build.version", "UNKNOWN");
     }
 
 

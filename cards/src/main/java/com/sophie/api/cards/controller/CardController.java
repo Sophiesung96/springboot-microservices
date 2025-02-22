@@ -3,6 +3,7 @@ package com.sophie.api.cards.controller;
 
 
 import com.sophie.api.cards.constants.CardsConstants;
+import com.sophie.api.cards.dto.CardsContactInfoDto;
 import com.sophie.api.cards.dto.CardsDto;
 import com.sophie.api.cards.dto.ErrorResponseDto;
 import com.sophie.api.cards.dto.ResponseDto;
@@ -31,12 +32,15 @@ import org.springframework.web.bind.annotation.*;
         description = "CRUD REST APIs in EazyBank to CREATE, UPDATE, FETCH AND DELETE card details"
 )
 @RestController
-@RequestMapping(path = "/api", produces = {MediaType.APPLICATION_JSON_VALUE})
+@RequestMapping(path = "/api/v1", produces = {MediaType.APPLICATION_JSON_VALUE})
 @AllArgsConstructor
 @Validated
 public class CardController {
 
     private CardsService cardsService;
+    private CardsContactInfoDto cardsContactInfoDto;
+
+
 
     @Operation(
             summary = "Create Card REST API",
@@ -161,6 +165,13 @@ public class CardController {
                     .status(HttpStatus.EXPECTATION_FAILED)
                     .body(new ResponseDto(CardsConstants.STATUS_417, CardsConstants.MESSAGE_417_DELETE));
         }
+    }
+
+    @GetMapping("/contact-info")
+    public ResponseEntity<CardsContactInfoDto> getContactInfo() {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(cardsContactInfoDto);
     }
 
 }

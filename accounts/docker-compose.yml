@@ -38,6 +38,8 @@ services:
     networks:
       - eazybank
 
+
+
 networks:
   eazybank:
     driver: "bridge"
