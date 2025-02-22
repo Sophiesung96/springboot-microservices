@@ -13,10 +13,15 @@ spring:
          #search-locations: "file:///C:/Users/sunny/IdeaProjects/Springboot-microservices/section4/configserver/src/main/resources/config/"
         git:
           uri: "https://github.com/Sophiesung96/springboot-microservices.git"
-          default-label: main
+          default-label: master
           timeout: 5
           clone-on-start: true
           force-pull: true #ensures the microservices get the latest version from git repo
+  rabbitmq:
+    host: "localhost"
+    port: 5672
+    username: "guest"
+    password: "guest"
 server:
   port: 8071
 
