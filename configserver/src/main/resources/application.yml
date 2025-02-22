@@ -1,0 +1,22 @@
+
+spring:
+  application:
+    name: "configserver"
+  profiles:
+    #active: native
+    active: git
+  cloud:
+    config:
+      server:
+        #native:
+         #search-locations: "classpath:/config"
+         #search-locations: "file:///C:/Users/sunny/IdeaProjects/Springboot-microservices/section4/configserver/src/main/resources/config/"
+        git:
+          uri: "https://github.com/Sophiesung96/springboot-microservices.git"
+          default-label: main
+          timeout: 5
+          clone-on-start: true
+          force-pull: true #ensures the microservices get the latest version from git repo
+server:
+  port: 8071
+

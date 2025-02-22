@@ -1,0 +1,11 @@
+build:
+  version: "3.1"
+
+accounts:
+  message: "Welcome to EazyBank cards related Production APIs "
+  contactDetails:
+    name: "Smith Ray - Product Owner"
+    email: "smithray@eazybank.com"
+  onCallSupport:
+    - (666) 655-1234
+    - (666) 623-1345
