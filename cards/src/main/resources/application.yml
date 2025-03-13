@@ -10,27 +10,20 @@ spring:
       - "qa"
 
   datasource:
-    url: jdbc:h2:mem:testdb
-    driverClassName: org.h2.Driver
-    username: sophie
-    password: test
-  h2:
-    console:
-      enabled: true
+    url: jdbc:mysql://localhost:3306/cardsdb
+    driverClassName: com.mysql.cj.jdbc.Driver
+    username: root
+    password: PPr783305
+
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      ddl-auto: update
     show-sql: true
 
   config:
     import: "optional:configserver:http://localhost:8071/"
+  sql:
+    init:
+      mode: always
 
-  rabbitmq:
-    host: "localhost"
-    port: 5672
-    username: "guest"
-    password: "guest"
 
 management:
   endpoints:
