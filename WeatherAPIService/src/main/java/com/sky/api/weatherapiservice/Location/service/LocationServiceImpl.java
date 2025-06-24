@@ -4,6 +4,10 @@ import com.sky.api.weatherapicommon.entity.Location;
 import com.sky.api.weatherapiservice.Exception.LocationNotFoundException;
 import com.sky.api.weatherapiservice.Location.repository.LocationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,9 +35,18 @@ public class LocationServiceImpl implements LocationService {
         return newLocation;
     }
 
-    @Override
+    @Deprecated
     public List<Location> list() {
-        return locationRepository.findUntrashed();
+        return null;
+        //return locationRepository.findUntrashed();
+    }
+
+    @Override
+    public Page<Location> listByPage(int pageNum, int pageSize, String sortField) {
+
+        Sort sort=Sort.by(sortField).ascending();
+        Pageable page= PageRequest.of(pageNum,pageSize,sort);
+        return locationRepository.findUntrashed(page);
     }
 
     @Override

@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>com.skyapi</groupId>
+    <groupId>com.sky.api</groupId>
     <artifactId>weather-api-common</artifactId>
     <version>1.0.0</version>
     <name>WeatherApiCommon</name>

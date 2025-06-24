@@ -1,11 +1,13 @@
 package com.sky.api.weatherapicommon.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.validator.constraints.Length;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -59,12 +61,15 @@ public class Location {
     private RealTimeWeather realTimeWeather;
 
     @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<HourlyWeather> listHourlyWeather;
+    private List<HourlyWeather> listHourlyWeather=new ArrayList<>();
 
+    @OneToMany(mappedBy = "location",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<DailyWeather> listDailyWeather=new ArrayList<>();
     @Override
     public String toString() {
         return
-                ", cityName='" + cityName + '\'' +
+                code+" =>  cityName='" + cityName + '\'' + ", countryCode='" + countryCode + '\'' +
+                        '\'' +   "code="+code+
                 ", regionName='" + regionName + '\'' +
                 ", countryName='" + countryName;
 

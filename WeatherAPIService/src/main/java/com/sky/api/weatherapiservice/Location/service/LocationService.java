@@ -1,14 +1,18 @@
 package com.sky.api.weatherapiservice.Location.service;
 
 import com.sky.api.weatherapicommon.entity.Location;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
 public interface LocationService {
 
-     Location add(Location location);
+    Location add(Location location);
 
+    @Deprecated
     List<Location> list();
+
+    Page<Location> listByPage(int pageNum, int pageSize, String sortField);
 
     Location get(String code);
 

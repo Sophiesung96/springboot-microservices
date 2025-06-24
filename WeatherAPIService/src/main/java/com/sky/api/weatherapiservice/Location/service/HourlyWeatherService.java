@@ -8,6 +8,7 @@ import com.sky.api.weatherapiservice.Location.repository.LocationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.swing.text.html.Option;
 import java.util.List;
@@ -19,12 +20,14 @@ public class HourlyWeatherService {
 
     private final LocationRepository locationRepository;
     private HourlyWeatherRepository hourlyWeatherRepository;
+
     @Autowired
     public HourlyWeatherService(HourlyWeatherRepository hourlyWeatherRepository, LocationRepository locationRepository) {
         this.hourlyWeatherRepository=hourlyWeatherRepository;
         this.locationRepository = locationRepository;
     }
 
+    @Transactional
     public List<HourlyWeather> getByLocation(Location location, int currentHour) {
         String locationCode=location.getCode();
         String countryCode=location.getCountryCode();
@@ -37,11 +40,13 @@ public class HourlyWeatherService {
         return hourlyWeatherRepository.findByLocationCodeAndHour(locationCode,currentHour);
     }
 
+    @Transactional
     public Optional<List<HourlyWeather>> getByLocationCode(String locationCode, int currentHour) {
         return Optional.ofNullable(locationRepository.findByCode(locationCode))
                 .map(location -> hourlyWeatherRepository.findByLocationCodeAndHour(locationCode, currentHour));
     }
 
+    @Transactional
     public List<HourlyWeather> updateByLocationCode(String locationCode, List<HourlyWeather> hourlyWeatherList){
         Location locationDB=locationRepository.findByCode(locationCode);
         if(locationDB==null)
@@ -54,7 +59,6 @@ public class HourlyWeatherService {
         if (!allMatchLocation) {
             throw new IllegalArgumentException("All HourlyWeather entities must match the given location code: " + locationCode);
         }
-
 
         return (List<HourlyWeather>) hourlyWeatherRepository.saveAll(hourlyWeatherList);
     }

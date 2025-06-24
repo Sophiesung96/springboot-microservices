@@ -13,6 +13,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -21,7 +22,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-@ControllerAdvice
+@RestControllerAdvice
 @Configuration
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -38,6 +39,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         errorDTO.addErrors(exception.getMessage() != null ? exception.getMessage() : "Internal Server Error");
 
         return new ResponseEntity<>(errorDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorDTO> handleBadRequestException(HttpServletRequest request,BadRequestException ex){
+
+        ErrorDTO errorDTO = ErrorDTO.builder()
+                .timestamp(new Date())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .path(request instanceof ServletWebRequest ?
+                        ((ServletWebRequest) request).getRequest().getServletPath() : "Unknown Path")
+                .build();
+
+        return new ResponseEntity<>(errorDTO,HttpStatus.BAD_REQUEST);
     }
 
     // Validation Exception Handler (Override Default)
@@ -108,6 +122,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(errorDTO, HttpStatus.BAD_REQUEST);
     }
 
+    // HourlyWeatherForecast Exception Handler
     @ExceptionHandler(HourlyWeatherForecastException.class)
     public ResponseEntity<ErrorDTO> handleHourlyWeatherForecastException(HttpServletRequest request, HourlyWeatherForecastException exception) {
         ErrorDTO errorDTO = ErrorDTO.builder()
@@ -121,8 +136,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(errorDTO, HttpStatus.BAD_REQUEST);
     }
 
+    // DailyWeatherForecast Exception Handler
+    @ExceptionHandler(DailyWeatherForecastException.class)
+    public ResponseEntity<ErrorDTO> handleDailyWeatherForecastException(HttpServletRequest request, DailyWeatherForecastException exception) {
+        ErrorDTO errorDTO = ErrorDTO.builder()
+                .timestamp(new Date())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .path(request.getServletPath())
+                .build();
+
+        // Add the exception message to the errors
+        errorDTO.addErrors(exception.getMessage() != null ? exception.getMessage() : "GeoLocationException Error");
+
+        return new ResponseEntity<>(errorDTO, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(ConstraintViolationException.class)
-    public ErrorDTO handleConstraintViolationException(ConstraintViolationException exception,HttpServletRequest request) {
+    public  ResponseEntity<ErrorDTO> handleConstraintViolationException(ConstraintViolationException exception,HttpServletRequest request) {
         ErrorDTO error=ErrorDTO.builder()
                 .timestamp(new Date())
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -132,6 +162,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         constraintViolationSet.forEach( constraintViolation -> {
             error.addErrors(constraintViolation.getPropertyPath()+": "+constraintViolation.getMessage());
         });
-        return error;
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 }

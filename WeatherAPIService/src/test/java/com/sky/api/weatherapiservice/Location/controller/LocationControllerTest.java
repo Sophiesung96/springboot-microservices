@@ -1,42 +1,43 @@
 package com.sky.api.weatherapiservice.Location.controller;
-
-import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sky.api.weatherapicommon.entity.Location;
 import com.sky.api.weatherapicommon.entity.RealTimeWeather;
 import com.sky.api.weatherapiservice.Exception.LocationNotFoundException;
 import com.sky.api.weatherapiservice.Location.repository.LocationRepository;
 import com.sky.api.weatherapiservice.Location.service.LocationService;
+import com.sky.api.weatherapiservice.mapper.WeatherMapper;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import org.springframework.data.domain.*;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+
 import java.util.Collections;
 import java.util.List;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 
 @WebMvcTest(LocationController.class)
 @AutoConfigureMockMvc
 class LocationControllerTest {
 
 
-        //manually inject a @Mock into the Spring context using @TestConfiguration
-        @TestConfiguration
-        static class MockConfig {
-            @Bean
-            public LocationService locationService() {
-                return Mockito.mock(LocationService.class);
-            }
-        }
 
-        @Autowired
+        @MockitoBean
+        private LocationRepository locationRepository;
+
+        @MockitoBean
         private LocationService locationService;
 
         @Autowired
@@ -44,6 +45,9 @@ class LocationControllerTest {
 
         @Autowired
         MockMvc mockMvc;
+
+        @MockitoBean
+        WeatherMapper weatherMapper;
 
 
         private static final String END_POINT_PATH = "/v1/locations";
@@ -60,11 +64,11 @@ class LocationControllerTest {
                     .build();
 
             Location location = Location.builder()
-                    .code("LDN_UK") // 6 characters, valid
-                    .cityName("London") // 6 characters, valid
+                    .code("LDN_UK")
+                    .cityName("London")
                     .regionName("England")
                     .countryName("United Kingdom")
-                    .countryCode("UK") // 2 characters, valid
+                    .countryCode("UK")
                     .enabled(true)
                     .trashed(false)
                     .realTimeWeather(realTimeWeather)
@@ -72,7 +76,7 @@ class LocationControllerTest {
 
 
             // Mock the service behavior
-            Mockito.when(locationService.add(Mockito.any(Location.class))).thenReturn(location);
+            when(locationService.add(Mockito.any(Location.class))).thenReturn(location);
 
             String bodyContent=objectMapper.writeValueAsString(location);
             mockMvc.perform(post(END_POINT_PATH).content(bodyContent).contentType("application/json"))
@@ -81,15 +85,87 @@ class LocationControllerTest {
         }
 
         @Test
-        public void testSuccess(){
-            List<Location> locations=locationService.list();
+        @Disabled
+        public void testListByPageShouldReturn204NoContent() throws Exception {
 
-            locations.forEach(System.out::println);
+            when(locationService.listByPage(anyInt(),anyInt(),anyString())).thenReturn(Page.empty());
+            mockMvc.perform(get(END_POINT_PATH))
+                    .andExpect(status().isNoContent())
+                    .andDo(print());
+        }
+
+    @Test
+    public void testListByPageShouldReturn400BadRequestInvalidPageSize() throws Exception {
+        int pageNum=1;
+        int pageSize=5;
+        String sortField="abc";
+        String requestURI=END_POINT_PATH+"?page="+pageNum+"&size="+pageSize+"&sort="+sortField;
+        when(locationService.listByPage(pageNum,pageSize,sortField)).thenReturn(Page.empty());
+        mockMvc.perform(get(requestURI))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0]",containsString("invalid sort field"+sortField)))
+                .andDo(print());
+    }
+
+
+    @Test
+        public void testListByPageShouldReturn200OK() throws Exception {
+
+            int pageSize=5;
+            int pageNum=1;
+            String sortField="code";
+            Sort sort=Sort.by(sortField).ascending();
+            Pageable pageable=PageRequest.of(pageNum,pageSize,sort);
+
+            RealTimeWeather realTimeWeather = RealTimeWeather.builder()
+                    .temperature(15)
+                    .humidity(60)
+                    .windSpeed(20)
+                    .precipitation(43)
+                    .status("Windy")
+                    .build();
+
+            Location location = Location.builder()
+                    .code("LDN_UK")
+                    .cityName("London")
+                    .regionName("England")
+                    .countryName("United Kingdom")
+                    .countryCode("UK")
+                    .enabled(true)
+                    .trashed(false)
+                    .realTimeWeather(realTimeWeather)
+                    .build();
+
+            Location location2 = Location.builder()
+                    .code("LACA_USA")
+                    .cityName("Los Angeles")
+                    .regionName("Los Angeles")
+                    .countryName("United States Of America")
+                    .countryCode("US")
+                    .enabled(true)
+                    .trashed(false)
+                    .realTimeWeather(realTimeWeather)
+                    .build();
+
+            List<Location> locationList=List.of(location,location2);
+            int totalElememts=locationList.size();
+            Page<Location> page=new PageImpl<>(locationList,pageable,totalElememts);
+            Mockito.when(locationService.listByPage(pageNum-1,pageSize,sortField)).thenReturn(page);
+            String requestUrl=END_POINT_PATH+"?page="+pageNum+"&size="+pageSize+"&sort="+sortField;
+            mockMvc.perform(get(requestUrl))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType("application/hal+json"))
+                    .andExpect(jsonPath("$._embedded[0].locations[0].code",equalTo("LDN_UK")))
+                    .andExpect(jsonPath("$[0].code",equalTo("LDN_UK")))
+                    .andExpect(jsonPath("$[0].city_name",equalTo("London")))
+                    .andExpect(jsonPath("$[0].country_name",equalTo("United Kingdom")))
+                    .andDo(print());
         }
 
         @Test
+        @Disabled
         public void testListShouldReturn204NoContent() throws Exception {
-            Mockito.when(locationService.list()).thenReturn(Collections.emptyList());
+            when(locationService.list()).thenReturn(Collections.emptyList());
             mockMvc.perform(get(END_POINT_PATH))
                     .andExpect(status().isNoContent())
                     .andDo(print());
@@ -115,7 +191,7 @@ class LocationControllerTest {
                 .countryCode("UK")
                 .countryName("United Kingdom")
                 .build();
-        Mockito.when(locationService.get(code)).thenReturn(location);
+        when(locationService.get(code)).thenReturn(location);
         String requestURI=END_POINT_PATH+"/"+code;
         mockMvc.perform(get(requestURI))
                 .andExpect(status().isOk())

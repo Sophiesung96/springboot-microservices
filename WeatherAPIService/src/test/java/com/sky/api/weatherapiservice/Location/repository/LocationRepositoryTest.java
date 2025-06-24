@@ -1,19 +1,24 @@
 package com.sky.api.weatherapiservice.Location.repository;
 
-import com.sky.api.weatherapicommon.entity.HourlyWeather;
-import com.sky.api.weatherapicommon.entity.HourlyWeatherId;
-import com.sky.api.weatherapicommon.entity.Location;
-import com.sky.api.weatherapicommon.entity.RealTimeWeather;
+import com.sky.api.weatherapicommon.entity.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.Rollback;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
+
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Rollback(false)
@@ -21,6 +26,8 @@ class LocationRepositoryTest {
 
     @Autowired
     private LocationRepository locationRepository;
+    @Autowired
+    private DailyWeatherRepository dailyWeatherRepository;
 
     @Test
     public void testGetNoFound(){
@@ -42,6 +49,27 @@ class LocationRepositoryTest {
         locationRepository.trashByCode(code);
         Location location=locationRepository.findByCode(code);
 
+    }
+
+
+    @Test
+    public void testListFirstPage(){
+        int pageSize=5;
+        int pageNum=0;
+        Pageable page= PageRequest.of(pageNum,pageSize);
+        Page<Location> location=locationRepository.findUntrashed(page);
+        assertEquals(location.getSize(),pageSize);
+    }
+
+    @Test
+    public void testList2ndPageWithSort(){
+        int pageSize=5;
+        int pageNum=0;
+        Sort sort=Sort.by("code").descending();
+        Pageable page= PageRequest.of(pageNum,pageSize,sort);
+        Page<Location> location=locationRepository.findUntrashed(page);
+        assertEquals(location.getSize(),pageSize);
+        location.forEach(System.out::println);
     }
 
     @Test
@@ -142,6 +170,55 @@ class LocationRepositoryTest {
         Location location=locationRepository.findByCode(locationCode);
         assertNotNull(location);
     }
+
+    @Test
+    @Transactional
+    public void testAddDailyWeatherData() {
+        Location location = locationRepository.findByCode("DELHL_IN");
+
+        if (location == null) {
+            throw new RuntimeException("Location with code DELHL_IN not found!");
+        }
+
+        List<DailyWeather> dailyWeatherList = location.getListDailyWeather();
+
+        DailyWeatherId id1 = new DailyWeatherId(16, 7, "DELHL_IN");
+        DailyWeatherId id2 = new DailyWeatherId(17, 7, "DELHL_IN");
+
+        // Fetch existing entities before creating new ones
+        DailyWeather dailyWeather1 = dailyWeatherRepository.findById(id1).orElse(null);
+        if (dailyWeather1 == null) {
+            dailyWeather1 = DailyWeather.builder()
+                    .location(location)
+                    .dailyWeatherId(id1)
+                    .minTemp(25)
+                    .maxTemp(33)
+                    .precipitation(20)
+                    .status("Sunny")
+                    .build();
+        }
+
+        DailyWeather dailyWeather2 = dailyWeatherRepository.findById(id2).orElse(null);
+        if (dailyWeather2 == null) {
+            dailyWeather2 = DailyWeather.builder()
+                    .location(location)
+                    .dailyWeatherId(id2)
+                    .minTemp(26)
+                    .maxTemp(38)
+                    .precipitation(44)
+                    .status("Humid")
+                    .build();
+        }
+
+        dailyWeatherList.add(dailyWeather1);
+        dailyWeatherList.add(dailyWeather2);
+
+        location.setListDailyWeather(dailyWeatherList);
+
+        Location updatedLocation = locationRepository.save(location);
+        assertTrue(updatedLocation.getListDailyWeather().contains(dailyWeather1));
+    }
+
 
 
 

@@ -1,9 +1,9 @@
 package com.sky.api.weatherapiservice.DTO;
 
 import com.sky.api.weatherapicommon.entity.HourlyWeather;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.Valid;
+import lombok.*;
+import org.springframework.hateoas.RepresentationModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,16 +11,18 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
-public class HourlyWeatherListDTO {
+@NoArgsConstructor
+@AllArgsConstructor
+public class HourlyWeatherListDTO extends RepresentationModel<HourlyWeatherListDTO> {
 
     private String location;
 
-    private List<HourlyWeatherDTO> hourlyWeatherList;
+    @Builder.Default
+    private List<HourlyWeatherDTO> hourlyWeatherList = new ArrayList<>();
 
+    // Optional helper, still safe with @Builder.Default
     public void addHourlyWeatherDTO(HourlyWeatherDTO hourlyWeatherDTO) {
-        if(hourlyWeatherList == null) {
-            hourlyWeatherList = new ArrayList<HourlyWeatherDTO>();
-        }
         hourlyWeatherList.add(hourlyWeatherDTO);
     }
 }
+

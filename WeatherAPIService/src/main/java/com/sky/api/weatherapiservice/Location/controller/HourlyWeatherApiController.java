@@ -1,13 +1,11 @@
 package com.sky.api.weatherapiservice.Location.controller;
 
 import com.sky.api.weatherapicommon.entity.HourlyWeather;
-import com.sky.api.weatherapicommon.entity.HourlyWeatherId;
 import com.sky.api.weatherapicommon.entity.Location;
-import com.sky.api.weatherapicommon.entity.RealTimeWeather;
 import com.sky.api.weatherapiservice.DTO.HourlyWeatherDTO;
 import com.sky.api.weatherapiservice.DTO.HourlyWeatherListDTO;
-import com.sky.api.weatherapiservice.Exception.HourlyWeatherForecastException;
-import com.sky.api.weatherapiservice.Exception.LocationNotFoundException;
+import com.sky.api.weatherapiservice.DTO.RealtimeWeatherDTO;
+import com.sky.api.weatherapiservice.mapper.WeatherMapper;
 import com.sky.api.weatherapiservice.Location.service.GeoLocationService;
 import com.sky.api.weatherapiservice.Location.service.HourlyWeatherService;
 import com.sky.api.weatherapiservice.Location.service.LocationService;
@@ -19,10 +17,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/v1/hourly")
@@ -33,8 +32,10 @@ public class HourlyWeatherApiController {
     private  HourlyWeatherService hourlyWeatherService;
     private LocationService locationService;
     private RealTimeWeatherService realTimeWeatherService;
-
     @Autowired
+    private WeatherMapper weatherMapper;
+
+
     public HourlyWeatherApiController(HourlyWeatherService hourlyWeatherService, GeoLocationService geoLocationService
             , LocationService locationService, RealTimeWeatherService realTimeWeatherService) {
         this.geoLocationService = geoLocationService;
@@ -56,7 +57,7 @@ public class HourlyWeatherApiController {
         {
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(listEntity2DTO(hourlyWeatherList));
+        return ResponseEntity.ok(addLinksByLocation(weatherMapper.listHourlyEntity2DTO(hourlyWeatherList),locationDB.getCode()));
     }
 
     @GetMapping("/{locationCode}")
@@ -66,7 +67,7 @@ public class HourlyWeatherApiController {
         if(!hourlyWeatherList.isEmpty())
         {
             log.warn("No weather data found for location: {} at hour: {}", locationCode, currentHour);
-            return ResponseEntity.ok(listEntity2DTO(hourlyWeatherList.get()));
+            return ResponseEntity.ok(weatherMapper.listHourlyEntity2DTO(hourlyWeatherList.get()));
         }
          return ResponseEntity.noContent().build();
     }
@@ -74,8 +75,8 @@ public class HourlyWeatherApiController {
     @PutMapping("/{locationCode}")
     public ResponseEntity<?> updateHourlyForecast(@PathVariable String locationCode,@RequestBody List<HourlyWeatherDTO> hourlyWeatherDTOList){
 
-        HourlyWeatherListDTO hListDTO=mapDTOListToHourlyWeatherDTOList(hourlyWeatherDTOList,locationCode);
-        List<HourlyWeather> hourlyWeatherList=listDTO2Entity(hListDTO);
+        HourlyWeatherListDTO hListDTO=weatherMapper.mapDTOListToHourlyWeatherDTOList(hourlyWeatherDTOList,locationCode);
+        List<HourlyWeather> hourlyWeatherList=weatherMapper.listHourlyDTO2Entity(hListDTO);
 
         List<HourlyWeather> updatedHourlyWeather=hourlyWeatherService.updateByLocationCode(locationCode,hourlyWeatherList);
 
@@ -84,80 +85,52 @@ public class HourlyWeatherApiController {
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok(updatedHourlyWeather);
+        return ResponseEntity.ok(addLinksByLocation(weatherMapper.listHourlyEntity2DTO(updatedHourlyWeather),locationCode));
     }
 
 
+    private HourlyWeatherListDTO addLinksByIP(HourlyWeatherListDTO hourlyWeatherDTO){
+        hourlyWeatherDTO.add(
+                linkTo(methodOn(HourlyWeatherApiController.class)
+                        .listHourlyForecastByIPAddress(null))
+                        .withSelfRel());
+        hourlyWeatherDTO.add(
+                linkTo(methodOn(RealTimeWeatherController.class)
+                        .getRealTimeWeatherByIPAddress(null))
+                        .withRel("realtime_weather"));
+        hourlyWeatherDTO.add(
+                linkTo(methodOn(DailyWeatherController.class)
+                        .listDailyWeatherByIpAddress(null))
+                        .withRel("daily_forecast"));
 
-    private HourlyWeatherListDTO listEntity2DTO(List<HourlyWeather> entity) {
-        // Extract the location code from the first entity
-        String location = entity.get(0).getLocation().toString();
-
-        // Map the list of entities to DTOs
-        List<HourlyWeatherDTO> hourlyWeatherDTOList = entity.stream()
-                .map(this::mapEntity2DTO) // Use the mapper method for each item
-                .collect(Collectors.toList());
-
-        // Build and return the DTO
-        return HourlyWeatherListDTO.builder()
-                .location(location)
-                .hourlyWeatherList(hourlyWeatherDTOList)
-                .build();
+        hourlyWeatherDTO.add(
+                linkTo(methodOn(FullWeatherApiController.class)
+                        .getFullWeatherByIPAddress(null))
+                        .withRel("full_forecast"));
+        return hourlyWeatherDTO;
     }
 
+    private HourlyWeatherListDTO addLinksByLocation(HourlyWeatherListDTO hourlyWeatherDTO,String locationCode){
+        hourlyWeatherDTO.add(
+                linkTo(methodOn(HourlyWeatherApiController.class)
+                        .listHourlyForecastByLocationCode(locationCode,null))
+                        .withSelfRel());
+        hourlyWeatherDTO.add(
+                linkTo(methodOn(RealTimeWeatherController.class)
+                        .getRealTimeWeatherByLocationCode(locationCode))
+                        .withRel("realtime_weather"));
+        hourlyWeatherDTO.add(
+                linkTo(methodOn(DailyWeatherController.class)
+                        .listDailyForecastByLocationCode(locationCode))
+                        .withRel("daily_forecast"));
 
-    private HourlyWeatherDTO mapEntity2DTO(HourlyWeather entity) {
-        return HourlyWeatherDTO.builder()
-                .precipitation(entity.getPrecipitation()) // Ensure correct field mapping
-                .status(entity.getLocation().getRealTimeWeather().getStatus()) // Get status from RealTimeWeather
-                .hourOfDay(entity.getId().getHourOfDay()) // Map hourOfDay
-                .temperature(entity.getTemperature()) // Map temperature
-                .build();
+        hourlyWeatherDTO.add(
+                linkTo(methodOn(FullWeatherApiController.class)
+                        .getFullWeatherByLocationCode(locationCode))
+                        .withRel("full_forecast"));
+        return hourlyWeatherDTO;
     }
 
-
-    private List<HourlyWeather> listDTO2Entity(HourlyWeatherListDTO hourlyWeatherDTOList) {
-        // Validate input
-        if (hourlyWeatherDTOList == null || hourlyWeatherDTOList.getHourlyWeatherList() == null || hourlyWeatherDTOList.getHourlyWeatherList().isEmpty()) {
-            throw new IllegalArgumentException("HourlyWeatherDTO list cannot be null or empty");
-        }
-        // Extract the location code from the DTO
-        String locationCode = hourlyWeatherDTOList.getLocation();
-
-        // Fetch the location from the service
-        Location location = locationService.findByLocationCode(locationCode);
-
-        // Map each DTO to an entity
-        return hourlyWeatherDTOList.getHourlyWeatherList().stream() // Extract the internal list
-                .map(dto -> mapDTO2Entity(dto, location)) // Use helper method for mapping
-                .collect(Collectors.toList());
-    }
-
-
-
-    private HourlyWeather mapDTO2Entity(HourlyWeatherDTO hourlyWeatherDTO, Location location) {
-
-        HourlyWeatherId hourlyWeatherId=new HourlyWeatherId(hourlyWeatherDTO.getHourOfDay(),location.getCode());
-        return HourlyWeather.builder()
-                .id(hourlyWeatherId)
-                .temperature(hourlyWeatherDTO.getTemperature()) // Map temperature
-                .precipitation(hourlyWeatherDTO.getPrecipitation()) // Map precipitation
-                .location(location) // Use the fetched Location object
-                .build();
-    }
-
-    private HourlyWeatherListDTO mapDTOListToHourlyWeatherDTOList(List<HourlyWeatherDTO> hourlyWeatherDTOList,String locationCode) {
-        // Validate input
-        if (hourlyWeatherDTOList == null || hourlyWeatherDTOList.isEmpty()) {
-            throw new IllegalArgumentException("HourlyWeatherDTO list cannot be null or empty");
-        }
-
-        // Build and return HourlyWeatherDTOList
-        return HourlyWeatherListDTO.builder()
-                .location(locationCode) // Set location
-                .hourlyWeatherList(hourlyWeatherDTOList) // Set the list of DTOs
-                .build();
-    }
 
 
 

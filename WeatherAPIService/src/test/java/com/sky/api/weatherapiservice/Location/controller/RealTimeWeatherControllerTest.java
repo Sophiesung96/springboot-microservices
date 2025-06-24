@@ -66,6 +66,7 @@ public class RealTimeWeatherControllerTest {
                 .andDo(print())
                 .andReturn();
 
+
         System.out.println(mvcResult.getResponse().getContentAsString());
     }
 
