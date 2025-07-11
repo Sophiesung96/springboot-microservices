@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.core.Relation;
 
 @JsonPropertyOrder({"code", "city_name", "region_name", "country_code", "country_name", "enabled"})

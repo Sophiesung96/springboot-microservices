@@ -26,6 +26,7 @@ public class WeatherMapper {
 
     public LocationDTO mapEntity2DTO(Location location){
         return LocationDTO.builder()
+                .code(location.getCode())
                 .regionName(location.getRegionName())
                 .cityName(location.getCityName())
                 .countryCode(location.getCountryCode())
@@ -44,7 +45,7 @@ public class WeatherMapper {
                 .build();
     }
 
-    private List<LocationDTO> listEntity2ListDTO(List<Location> listEntity) {
+    public List<LocationDTO> listEntity2ListDTO(List<Location> listEntity) {
 
         return listEntity.stream().map(this::mapEntity2DTO)
                 .collect(Collectors.toList());

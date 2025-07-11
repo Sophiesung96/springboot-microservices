@@ -12,13 +12,16 @@ import com.sky.api.weatherapiservice.Location.service.LocationService;
 import com.sky.api.weatherapiservice.Location.service.RealTimeWeatherService;
 import com.sky.api.weatherapiservice.Utility.CommonUtility;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -26,23 +29,14 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping("/v1/hourly")
 @Slf4j
+@RequiredArgsConstructor
 public class HourlyWeatherApiController {
 
-    private GeoLocationService geoLocationService;
-    private  HourlyWeatherService hourlyWeatherService;
-    private LocationService locationService;
-    private RealTimeWeatherService realTimeWeatherService;
-    @Autowired
-    private WeatherMapper weatherMapper;
-
-
-    public HourlyWeatherApiController(HourlyWeatherService hourlyWeatherService, GeoLocationService geoLocationService
-            , LocationService locationService, RealTimeWeatherService realTimeWeatherService) {
-        this.geoLocationService = geoLocationService;
-        this.hourlyWeatherService = hourlyWeatherService;
-        this.locationService = locationService;
-        this.realTimeWeatherService=realTimeWeatherService;
-    }
+    private final GeoLocationService geoLocationService;
+    private  final HourlyWeatherService hourlyWeatherService;
+    private final LocationService locationService;
+    private final RealTimeWeatherService realTimeWeatherService;
+    private final WeatherMapper weatherMapper;
 
 
     @GetMapping
@@ -57,7 +51,10 @@ public class HourlyWeatherApiController {
         {
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(addLinksByLocation(weatherMapper.listHourlyEntity2DTO(hourlyWeatherList),locationDB.getCode()));
+        var entity=addLinksByLocation(weatherMapper.listHourlyEntity2DTO(hourlyWeatherList),locationDB.getCode());
+        return ResponseEntity
+                .ok().cacheControl(CacheControl.maxAge(60, TimeUnit.MINUTES).cachePublic())
+                .body(entity);
     }
 
     @GetMapping("/{locationCode}")
@@ -67,7 +64,9 @@ public class HourlyWeatherApiController {
         if(!hourlyWeatherList.isEmpty())
         {
             log.warn("No weather data found for location: {} at hour: {}", locationCode, currentHour);
-            return ResponseEntity.ok(weatherMapper.listHourlyEntity2DTO(hourlyWeatherList.get()));
+            var entity=weatherMapper.listHourlyEntity2DTO(hourlyWeatherList.get());
+            return ResponseEntity.ok().cacheControl(CacheControl.maxAge(60,TimeUnit.MINUTES).cachePublic()
+                    ).body(entity);
         }
          return ResponseEntity.noContent().build();
     }

@@ -11,9 +11,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -42,16 +40,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ErrorDTO> handleBadRequestException(HttpServletRequest request,BadRequestException ex){
+    public ResponseEntity<ErrorDTO> handleBadRequestException(WebRequest request,BadRequestException ex){
 
         ErrorDTO errorDTO = ErrorDTO.builder()
                 .timestamp(new Date())
                 .status(HttpStatus.BAD_REQUEST.value())
-                .path(request instanceof ServletWebRequest ?
-                        ((ServletWebRequest) request).getRequest().getServletPath() : "Unknown Path")
+                .path(request.getDescription(false).replace("uri=", ""))
                 .build();
 
-        return new ResponseEntity<>(errorDTO,HttpStatus.BAD_REQUEST);
+
+        // Add the exception message to the errors
+        errorDTO.addErrors(ex.getMessage() != null ? ex.getMessage() : "BadRequestException Error");
+
+        return new ResponseEntity<>(errorDTO, HttpStatus.BAD_REQUEST);
+
     }
 
     // Validation Exception Handler (Override Default)
@@ -163,5 +165,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             error.addErrors(constraintViolation.getPropertyPath()+": "+constraintViolation.getMessage());
         });
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+
+    //@ExceptionHandler(JwtValidationException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ResponseBody
+    public ErrorDTO handleJwtValidationException(HttpServletRequest request, Exception ex) {
+        ErrorDTO error = new ErrorDTO();
+
+        error.setTimestamp(new Date());
+        error.setStatus(HttpStatus.UNAUTHORIZED.value());
+        error.addErrors(ex.getMessage());
+        error.setPath(request.getServletPath());
+        return error;
     }
 }

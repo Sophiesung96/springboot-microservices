@@ -1,8 +1,10 @@
 package com.sky.api.weatherapiservice.Location.service;
 
 import com.sky.api.weatherapicommon.entity.Location;
+import com.sky.api.weatherapiservice.DTO.LocationDTO;
 import com.sky.api.weatherapiservice.Exception.LocationNotFoundException;
 import com.sky.api.weatherapiservice.Location.repository.LocationRepository;
+import com.sky.api.weatherapiservice.mapper.WeatherMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -41,13 +44,13 @@ public class LocationServiceImpl implements LocationService {
         //return locationRepository.findUntrashed();
     }
 
-    @Override
-    public Page<Location> listByPage(int pageNum, int pageSize, String sortField) {
 
-        Sort sort=Sort.by(sortField).ascending();
-        Pageable page= PageRequest.of(pageNum,pageSize,sort);
-        return locationRepository.findUntrashed(page);
+    @Override
+    public Page<Location> listByPage(int pageNum, int pageSize, Sort sort, Map<String, Object> filterFields) {
+        Pageable pageable = PageRequest.of(pageNum, pageSize, sort);
+        return locationRepository.listWithFilters(pageable, filterFields);
     }
+
 
     @Override
     public Location get(String code) {

@@ -16,9 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.w3c.dom.Entity;
+
+import java.util.concurrent.TimeUnit;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -32,7 +35,6 @@ public class FullWeatherApiController {
     private final FullWeatherService fullWeatherService;
     private final GeoLocationService geoLocationService;
     private final WeatherMapper weatherMapper;
-    @Autowired
     private final FullWeatherModelAssembler assembler;
 
     @GetMapping("")
@@ -41,13 +43,21 @@ public class FullWeatherApiController {
         Location locationFromIP=geoLocationService.getLocation(ipAddress);
         Location locationFromDB=fullWeatherService.getByLocation(locationFromIP);
 
-        return ResponseEntity.ok(assembler.toModel(weatherMapper.fullEntity2Dto(locationFromDB)));
+        var entity=assembler.toModel(weatherMapper.fullEntity2Dto(locationFromDB));
+
+        return ResponseEntity
+                .ok()
+                .cacheControl(CacheControl.maxAge(30,TimeUnit.MINUTES).cachePublic())
+                .body(entity);
     }
 
     @GetMapping("/{locationCode}")
     public ResponseEntity<?> getFullWeatherByLocationCode(@PathVariable String locationCode){
         Location locationInDB=fullWeatherService.get(locationCode);
-        return ResponseEntity.ok(addLinksByLocation(weatherMapper.fullEntity2Dto(locationInDB),locationCode));
+        var entity=addLinksByLocation(weatherMapper.fullEntity2Dto(locationInDB),locationCode);
+        return ResponseEntity
+                .ok().cacheControl(CacheControl.maxAge(30, TimeUnit.MINUTES).cachePublic())
+                .body(entity);
 
     }
 

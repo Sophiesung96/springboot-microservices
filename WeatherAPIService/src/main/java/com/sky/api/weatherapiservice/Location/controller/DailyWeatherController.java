@@ -11,13 +11,16 @@ import com.sky.api.weatherapiservice.Utility.CommonUtility;
 import com.sky.api.weatherapiservice.mapper.WeatherMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -25,21 +28,15 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/v1/daily")
+@RequiredArgsConstructor
 public class DailyWeatherController {
 
-    private DailyWeatherService dailyWeatherService;
-    private LocationService locationService;
-    private GeoLocationService  geoLocationService;
+    private final DailyWeatherService dailyWeatherService;
+    private final LocationService locationService;
+    private final GeoLocationService  geoLocationService;
 
-    @Autowired
-    private WeatherMapper weatherMapper;
+    private final WeatherMapper weatherMapper;
 
-    public DailyWeatherController(DailyWeatherService dailyWeatherService, LocationService
-                                  locationService, GeoLocationService geoLocationService) {
-        this.dailyWeatherService = dailyWeatherService;
-        this.locationService = locationService;
-        this.geoLocationService = geoLocationService;
-    }
 
     @GetMapping()
     public ResponseEntity<?> listDailyWeatherByIpAddress(HttpServletRequest request){
@@ -66,7 +63,9 @@ public class DailyWeatherController {
         if(dailyWeatherList.isEmpty()){
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok().body(weatherMapper.listDailyEntity2DTO(dailyWeatherList));
+        var entity=weatherMapper.listDailyEntity2DTO(dailyWeatherList);
+        return ResponseEntity.ok().cacheControl(CacheControl.maxAge(6, TimeUnit.HOURS)
+                .cachePublic()).body(entity);
     }
 
 

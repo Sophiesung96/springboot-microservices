@@ -1,9 +1,12 @@
 package com.sky.api.weatherapiservice.base;
 
 import com.sky.api.weatherapiservice.Location.controller.MainController;
+import com.sky.api.weatherapiservice.Location.controller.SecurityConfigForTestControllerTests;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.is;
@@ -13,6 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(MainController.class)
+@ActiveProfiles("test")
+@Import(SecurityConfigForTestControllerTests.class)
 class MainControllerTest {
 
     private static final String BASE_URL="/";
@@ -26,7 +31,7 @@ class MainControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.locations_url",is("http://localhost/v1/locations")))
                 .andExpect(jsonPath("$.location_by_code_url",is("http://localhost/v1/locations/{code}")))
-                .andExpect(jsonPath("$.reatimeWeather_by_ip_u",is("http://localhost/v1/realtime")))
+                .andExpect(jsonPath("$.reatimeWeather_by_ip_url",is("http://localhost/v1/realtime")))
                 .andExpect(jsonPath("$.realtimeWeather_by_code_url",is("http://localhost/v1/realtime/{locationCode}")))
                 .andExpect(jsonPath("$.hourly_forecast_by_ip_url",is("http://localhost/v1/hourly")))
                 .andExpect(jsonPath("$.hourly_forecast_by_code_url",is("http://localhost/v1/hourly/{locationCode}")))

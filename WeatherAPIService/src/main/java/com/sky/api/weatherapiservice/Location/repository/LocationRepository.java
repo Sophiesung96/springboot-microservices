@@ -12,10 +12,11 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface LocationRepository extends JpaRepository<Location, String> {
+public interface LocationRepository extends FilterableLocationRepository,JpaRepository<Location, String> {
     // Custom query methods (if any)
 
     @Query("select l from Location l where l.trashed=false")
+    @Deprecated
     Page<Location> findUntrashed(Pageable pageable);
 
     @Query("select l from Location l where l.trashed = false and l.code = :code")

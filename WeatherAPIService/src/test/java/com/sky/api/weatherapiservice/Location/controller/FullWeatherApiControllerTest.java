@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,7 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(FullWeatherApiController.class)
-@Import({SpyBeanConfig.class, WeatherMapper.class})
+@ActiveProfiles("test")
+@Import({SpyBeanConfig.class, WeatherMapper.class, SecurityConfigForTestControllerTests.class})
 class FullWeatherApiControllerTest {
 
     @Autowired
